@@ -8,21 +8,28 @@ DefConfigFile = ".433ook-config"
 # Class for 433 Mhz control - via RPi GPIO pins
 class ook433Control():
     rpi_valid_gpio_pins=[4,5,6,7,8,12,13,16,17,18,19,20,22,23,24,25,27,29]
-    gpio_rx_pin =23   # Pin to learn on
-    gpio_tx_pin =25   # Pin to transmit on
+    gpio_rx_pin =0   # Pin to learn on
+    gpio_tx_pin =0   # Pin to transmit on
+    tx_dot_delay =0
+    tx_dash_delay =0
+    tx_frame_delay =0
 
     OOKdev_on={}
     OOKdev_off={}
 
     def __init__(self):
+        GPIO.setmode(GPIO.BCM)
         init_run=True
 
     def set_tx_gpio_pin(self,txpin):
         #Check  it's a valid GPIO pin
         if txpin not in self.rpi_valid_gpio_pins:
            return None
+        if self.gpio_tx_pin != 0:
+           GPIO.cleanup(self.gpio_tx_pin)
         # Redefine the GPIO PIN to read from
         self.gpio_tx_pin = txpin
+        GPIO.setup(TRANSMIT_PIN,txpin)
         return txpin
 
     def get_tx_gpio_pin(self):
@@ -35,8 +42,11 @@ class ook433Control():
         #Check  it's a valid GPIO pin
         if rxpin not in self.rpi_valid_gpio_pins:
            return None
+        if self.gpio_rx_pin != 0:
+           GPIO.cleanup(self.gpio_rx_pin)
         # Redefine the GPIO PIN to read from
         self.gpio_rx_pin = rxpin
+        GPIO.setup(RECIEVE_PIN,rxpin)
         return rxpin
 
     def listen():
@@ -44,6 +54,29 @@ class ook433Control():
 
     def transmit_ook(self,device,onoff):
         #Send a code to the transmitter
+        if onoff ="ON":
+           message=self.OOKdev_on[device] 
+        else:
+           message=self.OOKdev_on[device] 
+
+        for thisgo in range(tx_cycles):
+           for bit in message:
+               if bit == '0':
+                    GPIO.output(self.gpio_txpin, 1)
+                    time.sleep(dot_delay)
+                    GPIO.output(self.gpio_txpin, 0)
+                    time.sleep(dash_delay)
+               elif bit == '1':^M
+                    GPIO.output(self.gpio_txpin, 1)
+                    time.sleep(dash_delay)
+                    GPIO.output(self.gpio_txpin, 0)
+                    time.sleep(dot_delay)
+               else:
+                    continue
+           # End of Message - tidy up before next one
+           GPIO.output(self.gpio_txpin, 0)
+           time.sleep(frame_delay)
+           
         return None
 
     def define_device(self,name,oncode,offcode):
@@ -83,6 +116,11 @@ class ook433Control():
         if result != None:
            print("DEVICE")
            self.define_device(result['item'],result['oncode'],result['offcode'])
+           return None 
+        result=parse("DELAY {type}={value}",line)
+        if result != None:
+           print("DELAY")
+           self.define_delay(result['type'],result['value'])
            return None 
         # Unknown line 
         return "Unknown Directive"
