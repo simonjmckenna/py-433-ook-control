@@ -70,7 +70,7 @@ class ook433Control():
         if delay >= self.long_delay:
            return None
         # Redefine the SHORT Delay
-        self.frame_delay = delay
+        self.short_delay = delay
         return delay
 
     def get_frame_delay(self):
@@ -152,7 +152,7 @@ class ook433Control():
            return None 
         result=parse("TIMING {type}={value}",line)
         if result != None:
-           print("SPACING")
+           print("TIMING")
            if result['type'] == "FRAME":
               print ("FRAME")
               if self.set_frame_delay(int(result["value"]))== None:
@@ -166,9 +166,8 @@ class ook433Control():
               if self.set_short_delay(int(result["value"]))== None:
                   return "bad value SPACING "+result["type"]+" value - "+result["vlaue]"]
            else:
-               return "Invalid DELAY type -"+result["type"]
+               return "Invalid TIMING type -"+result["type"]
             
-           self.define_delay(result['type'],result['value'])
            return None 
         # Unknown line 
         return "Unknown Directive"
@@ -198,9 +197,9 @@ class ook433Control():
         config.write("#GPIO Headers\n")
         config.write("SET GPIO_RX_PIN="+str(self.gpio_rx_pin)+"\n")
         config.write("SET GPIO_TX_PIN="+str(self.gpio_tx_pin)+"\n")
-        config.write("SPACING LONG="+str(self.long_delay)+"\n")
-        config.write("SPACING FRAME="+str(self.frame_delay)+"\n")
-        config.write("SPACING SHORT="+str(self.short_delay)+"\n")
+        config.write("TIMING LONG="+str(self.long_delay)+"\n")
+        config.write("TIMING FRAME="+str(self.frame_delay)+"\n")
+        config.write("TIMING SHORT="+str(self.short_delay)+"\n")
         print("start writing file Devices")
         config.write("# Plug Groups Names and Codes\n")
 
