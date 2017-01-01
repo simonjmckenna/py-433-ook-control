@@ -24,6 +24,10 @@ if ook433a.set_tx_gpio_pin(txpin) == None:
 print("gpio rx pin is ",ook433a.get_rx_gpio_pin())
 print("gpio tx pin is ",ook433a.get_tx_gpio_pin())
 
+ook433a.set_long_delay(30)
+ook433a.set_short_delay(15)
+ook433a.set_long_delay(45)
+
 ook433a.define_device("plug1","plug1-on","plug1-off")
 ook433a.define_device("plug2","plug2-on","plug2-off")
 ook433a.define_device("plug3","plug3-on","plug3-off")

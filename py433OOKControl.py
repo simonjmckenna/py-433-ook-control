@@ -10,9 +10,9 @@ class ook433Control():
     rpi_valid_gpio_pins=[4,5,6,7,8,12,13,16,17,18,19,20,22,23,24,25,27,29]
     gpio_rx_pin =0   # Pin to learn on
     gpio_tx_pin =0   # Pin to transmit on
-    tx_dot_delay =0
-    tx_dash_delay =0
-    tx_frame_delay =0
+    short_delay =0
+    long_delay =0
+    frame_delay =0
 
     OOKdev_on={}
     OOKdev_off={}
@@ -29,7 +29,7 @@ class ook433Control():
            GPIO.cleanup(self.gpio_tx_pin)
         # Redefine the GPIO PIN to read from
         self.gpio_tx_pin = txpin
-        GPIO.setup(TRANSMIT_PIN,txpin)
+        GPIO.setup(txpin,GPIO.OUT)
         return txpin
 
     def get_tx_gpio_pin(self):
@@ -46,15 +46,48 @@ class ook433Control():
            GPIO.cleanup(self.gpio_rx_pin)
         # Redefine the GPIO PIN to read from
         self.gpio_rx_pin = rxpin
-        GPIO.setup(RECIEVE_PIN,rxpin)
+        GPIO.setup(rxpin,GPIO.IN)
         return rxpin
+    
+    def set_frame_delay(self,delay):
+        #Check  it's a valid delay - must be greater than the long delay
+        if delay <= self.long_delay:
+           return None
+        # Redefine the FRAME Delay
+        self.frame_delay = delay
+        return delay
+
+    def set_long_delay(self,delay):
+        #Check  it's a valid delay - must be greater than the short delay
+        if delay <= self.short_delay:
+           return None
+        # Redefine the LONG Delay
+        self.long_delay = delay
+        return delay
+
+    def set_short_delay(self,delay):
+        #Check  it's a valid delay - must be smaller than the long delay
+        if delay >= self.long_delay:
+           return None
+        # Redefine the SHORT Delay
+        self.frame_delay = delay
+        return delay
+
+    def get_frame_delay(self):
+        return self.frame_delay
+
+    def get_long_delay(self):
+        return self.long_delay
+
+    def get_short_delay(self):
+        return self.short_delay
 
     def listen():
         return None
 
     def transmit_ook(self,device,onoff):
         #Send a code to the transmitter
-        if onoff ="ON":
+        if onoff =="ON":
            message=self.OOKdev_on[device] 
         else:
            message=self.OOKdev_on[device] 
@@ -63,19 +96,19 @@ class ook433Control():
            for bit in message:
                if bit == '0':
                     GPIO.output(self.gpio_txpin, 1)
-                    time.sleep(dot_delay)
+                    time.sleep(self.short_delay)
                     GPIO.output(self.gpio_txpin, 0)
-                    time.sleep(dash_delay)
-               elif bit == '1':^M
+                    time.sleep(self.long_delay)
+               elif bit == '1':
                     GPIO.output(self.gpio_txpin, 1)
-                    time.sleep(dash_delay)
+                    time.sleep(self.long__delay)
                     GPIO.output(self.gpio_txpin, 0)
-                    time.sleep(dot_delay)
+                    time.sleep(self.short_delay)
                else:
                     continue
            # End of Message - tidy up before next one
            GPIO.output(self.gpio_txpin, 0)
-           time.sleep(frame_delay)
+           time.sleep(self.frame_delay)
            
         return None
 
@@ -117,9 +150,24 @@ class ook433Control():
            print("DEVICE")
            self.define_device(result['item'],result['oncode'],result['offcode'])
            return None 
-        result=parse("DELAY {type}={value}",line)
+        result=parse("TIMING {type}={value}",line)
         if result != None:
-           print("DELAY")
+           print("SPACING")
+           if result['type'] == "FRAME":
+              print ("FRAME")
+              if self.set_frame_delay(int(result["value"]))== None:
+                 return "bad value SPACING "+result["type"]+" value - "+result["vlaue]"]
+           elif result['type'] == "LONG":
+              print ("LONG")
+              if self.set_long_delay(int(result["value"]))== None:
+                 return "bad value SPACING "+result["type"]+" value - "+result["vlaue]"]
+           elif result['type'] == "SHORT":
+              print ("SHORT")
+              if self.set_short_delay(int(result["value"]))== None:
+                  return "bad value SPACING "+result["type"]+" value - "+result["vlaue]"]
+           else:
+               return "Invalid DELAY type -"+result["type"]
+            
            self.define_delay(result['type'],result['value'])
            return None 
         # Unknown line 
@@ -150,6 +198,9 @@ class ook433Control():
         config.write("#GPIO Headers\n")
         config.write("SET GPIO_RX_PIN="+str(self.gpio_rx_pin)+"\n")
         config.write("SET GPIO_TX_PIN="+str(self.gpio_tx_pin)+"\n")
+        config.write("SPACING LONG="+str(self.long_delay)+"\n")
+        config.write("SPACING FRAME="+str(self.frame_delay)+"\n")
+        config.write("SPACING SHORT="+str(self.short_delay)+"\n")
         print("start writing file Devices")
         config.write("# Plug Groups Names and Codes\n")
 
