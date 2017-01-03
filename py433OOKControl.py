@@ -1,18 +1,27 @@
 from datetime import datetime
+from hrSleep import hrSleep
 import RPi.GPIO as GPIO
 from parse import *
 
+hrtime = hrSleep()
 
 DefConfigFile = ".433ook-config"
 
 # Class for 433 Mhz control - via RPi GPIO pins
 class ook433Control():
     rpi_valid_gpio_pins=[4,5,6,7,8,12,13,16,17,18,19,20,22,23,24,25,27,29]
+
+    ZERO=0
+    ONE=1
+    BIT=2
+    FRAME=3
+
     gpio_rx_pin =0   # Pin to learn on
     gpio_tx_pin =0   # Pin to transmit on
-    short_delay =0
-    long_delay =0
-    frame_delay =0
+    zero_pulse =0
+    one_pulse =0
+    bit_width =0 
+    frame_gap =0
 
     OOKdev_on={}
     OOKdev_off={}
@@ -49,38 +58,36 @@ class ook433Control():
         GPIO.setup(rxpin,GPIO.IN)
         return rxpin
     
-    def set_frame_delay(self,delay):
-        #Check  it's a valid delay - must be greater than the long delay
-        if delay <= self.long_delay:
-           return None
-        # Redefine the FRAME Delay
-        self.frame_delay = delay
-        return delay
-
-    def set_long_delay(self,delay):
+    def set_protocolTime(self,type,protocoltime):
         #Check  it's a valid delay - must be greater than the short delay
-        if delay <= self.short_delay:
-           return None
-        # Redefine the LONG Delay
-        self.long_delay = delay
-        return delay
+        if type == self.BIT:
+           self.bit_width = protocoltime
+        elif type == self.FRAME:
+           self.frame_gap = protocoltime
+        elif type == self.ZERO:
+           self.zero_pulse = protocoltime
+        elif type == self.ONE:
+           self.one_pulse = protocoltime
+        else:
+          return None
 
-    def set_short_delay(self,delay):
-        #Check  it's a valid delay - must be smaller than the long delay
-        if delay >= self.long_delay:
-           return None
-        # Redefine the SHORT Delay
-        self.short_delay = delay
-        return delay
+        return protocoltime
 
-    def get_frame_delay(self):
-        return self.frame_delay
+    def get_protocolTime(self,type):
+        #Check  it's a valid delay - must be greater than the short delay
+        if type == self.BIT:
+           protocoltime= self.bit_width
+        elif type == self.FRAME:
+           protocoltime = self.frame_gap
+        elif type == self.ZERO:
+           protocoltime = self.zero_pulse
+        elif type == self.ONE:
+           protocoltime = self.one_pulse
+        else:
+          return None
 
-    def get_long_delay(self):
-        return self.long_delay
+        return protocoltime
 
-    def get_short_delay(self):
-        return self.short_delay
 
     def listen():
         return None
@@ -92,23 +99,26 @@ class ook433Control():
         else:
            message=self.OOKdev_on[device] 
 
+        zero_wait = self.bit_width - self.zero_pulse
+        one_wait = self.bit_width - self.one_pulse
+
         for thisgo in range(tx_cycles):
            for bit in message:
                if bit == '0':
                     GPIO.output(self.gpio_txpin, 1)
-                    time.sleep(self.short_delay)
+                    hrtime.usDelay(self.zero_pulse)
                     GPIO.output(self.gpio_txpin, 0)
-                    time.sleep(self.long_delay)
+                    hrtime.usDelay(zero_wait)
                elif bit == '1':
                     GPIO.output(self.gpio_txpin, 1)
-                    time.sleep(self.long__delay)
+                    hrtime.usDelay(self.one_pulse)
                     GPIO.output(self.gpio_txpin, 0)
-                    time.sleep(self.short_delay)
+                    hrtime.usDelay(one_wait)
                else:
                     continue
            # End of Message - tidy up before next one
            GPIO.output(self.gpio_txpin, 0)
-           time.sleep(self.frame_delay)
+           hrtime.usDelay(self.frame_gap)
            
         return None
 
@@ -155,15 +165,19 @@ class ook433Control():
            print("TIMING")
            if result['type'] == "FRAME":
               print ("FRAME")
-              if self.set_frame_delay(int(result["value"]))== None:
-                 return "bad value SPACING "+result["type"]+" value - "+result["vlaue]"]
-           elif result['type'] == "LONG":
-              print ("LONG")
-              if self.set_long_delay(int(result["value"]))== None:
-                 return "bad value SPACING "+result["type"]+" value - "+result["vlaue]"]
-           elif result['type'] == "SHORT":
-              print ("SHORT")
-              if self.set_short_delay(int(result["value"]))== None:
+              if self.set_protocolTime(self.FRAME,int(result["value"]))== None:
+                 return "bad value SPACING "+result["type"]+" value - "+result["value]"]
+           elif result['type'] == "ZERO":
+              print ("ZERO")
+              if self.set_protocolTime(self.ZERO,int(result["value"]))== None:
+                 return "bad value SPACING "+result["type"]+" value - "+result["value]"]
+           elif result['type'] == "ONE":
+              print ("ONE")
+              if self.set_protocolTime(self.ONE,int(result["value"]))== None:
+                  return "bad value SPACING "+result["type"]+" value - "+result["vlaue]"]
+           elif result['type'] == "BIT":
+              print ("BIT")
+              if self.set_protocolTime(self.BIT,int(result["value"]))== None:
                   return "bad value SPACING "+result["type"]+" value - "+result["vlaue]"]
            else:
                return "Invalid TIMING type -"+result["type"]
@@ -197,9 +211,10 @@ class ook433Control():
         config.write("#GPIO Headers\n")
         config.write("SET GPIO_RX_PIN="+str(self.gpio_rx_pin)+"\n")
         config.write("SET GPIO_TX_PIN="+str(self.gpio_tx_pin)+"\n")
-        config.write("TIMING LONG="+str(self.long_delay)+"\n")
-        config.write("TIMING FRAME="+str(self.frame_delay)+"\n")
-        config.write("TIMING SHORT="+str(self.short_delay)+"\n")
+        config.write("TIMING BIT="+str(self.bit_width)+"\n")
+        config.write("TIMING FRAME="+str(self.frame_gap)+"\n")
+        config.write("TIMING ZERO="+str(self.zero_pulse)+"\n")
+        config.write("TIMING ONE="+str(self.one_pulse)+"\n")
         print("start writing file Devices")
         config.write("# Plug Groups Names and Codes\n")
 
