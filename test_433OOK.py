@@ -56,6 +56,10 @@ if ook433a.set_protocolTime(ook433a.FRAME,1000) != 1000:
    Failed += 1
    print("set_protocolTime - FRAME - failed")
 
+if ook433a.set_protocolTime(ook433a.TXCYCLES,10) != 10:
+   Failed += 1
+   print("set_protocolTime - TXCYCLES - failed")
+
 ook433a.define_device("plug1","plug1-on","plug1-off")
 ook433a.define_device("plug2","plug2-on","plug2-off")
 ook433a.define_device("plug3","plug3-on","plug3-off")
@@ -80,6 +84,10 @@ if ook433a.get_protocolTime(ook433a.ZERO) != ook433b.get_protocolTime(ook433b.ZE
 
 if ook433a.get_protocolTime(ook433a.ONE) != ook433b.get_protocolTime(ook433b.ONE):
    print("ONE PULSE")
+   Failed += 1
+
+if ook433a.get_protocolTime(ook433a.TXCYCLES) != ook433b.get_protocolTime(ook433b.TXCYCLES):
+   print("TX CYCLES")
    Failed += 1
 
 if ook433a.get_rx_gpio_pin() != ook433b.get_rx_gpio_pin() :
