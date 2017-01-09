@@ -23,6 +23,8 @@ class ook433Control():
     VALID_TX=95
     VALID_ALL=127
     initialised = 0
+    ON=0
+    OFF=1
 
     gpio_rx_pin =0   # Pin to learn on
     gpio_tx_pin =0   # Pin to transmit on
@@ -136,11 +138,11 @@ class ook433Control():
         # Have all the transmit parmeters been set properly
         if self.is_initialised(self.VALID_TX) != True:
             return False
-        # Fine the right transmit data
+        # Find the right transmit data
         try:
-            if onoff =="ON":
+            if onoff == self.ON:
                 message=self.OOKdev_on[device] 
-            elif onoff=="OFF":
+            elif onoff== self.OFF:
                 message=self.OOKdev_on[device] 
             else:
                 return False
@@ -154,21 +156,21 @@ class ook433Control():
         for thisgo in range(self.tx_cycles):
            for bit in message:
                if bit == '0':
-                    GPIO.output(self.gpio_txpin, 1)
+                    GPIO.output(self.gpio_tx_pin, 1)
                     hrtime.usDelay(self.zero_pulse)
-                    GPIO.output(self.gpio_txpin, 0)
+                    GPIO.output(self.gpio_tx_pin, 0)
                     hrtime.usDelay(zero_wait)
                elif bit == '1':
-                    GPIO.output(self.gpio_txpin, 1)
+                    GPIO.output(self.gpio_tx_pin, 1)
                     hrtime.usDelay(self.one_pulse)
-                    GPIO.output(self.gpio_txpin, 0)
+                    GPIO.output(self.gpio_tx_pin, 0)
                     hrtime.usDelay(one_wait)
                else:
                     continue
            # End of Message - tidy up before next one
-           GPIO.output(self.gpio_txpin, 0)
+           GPIO.output(self.gpio_tx_pin, 0)
            hrtime.usDelay(self.frame_gap)
-           
+          
         return True
 
     def define_device(self,name,oncode,offcode):

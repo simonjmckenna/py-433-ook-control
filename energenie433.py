@@ -129,12 +129,12 @@ class EnergenieProtocol():
     def turnon_device(self,name):
         if self.radio.is_initialised(self.radio.VALID_TX) != True:
            return False
-        return self.radio.transmit_ook(name,self.ON)
+        return self.radio.transmit_ook(name,self.radio.ON)
 
     def turnoff_device(self,name):
         if self.radio.is_initialised(self.radio.VALID_TX) != True:
            return False
-        return self.radio.transmit_ook(name,self.OFF)
+        return self.radio.transmit_ook(name,self.radio.OFF)
 
     def listen_to_radio():
         if self.radio.is_initialised(self.radio.VALID_RX) != True:
